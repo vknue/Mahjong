@@ -10,6 +10,9 @@ public class Constants {
     public static final String STATE_FILE_NAME = "file.txt";
     public static final String DOCUMENTATION_FILE_NAME = "documentation.html";
     public static final String MAHJONG = "Mahjong";
-
+    public static final String BACK_IMAGE = "vknue/mahjong/images/Back.png";
+    public static final int SERVER_PORT = 1991;
+    public static final int CLIENT_PORT = 1992;
+    public static final String HOST = "localhost";
 
 }

@@ -1,4 +1,4 @@
-package vknue.mahjong.Models;
+package vknue.mahjong.models;
 
 import javafx.scene.image.ImageView;
 

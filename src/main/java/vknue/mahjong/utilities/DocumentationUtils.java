@@ -1,4 +1,4 @@
-package vknue.mahjong.Utilities;
+package vknue.mahjong.utilities;
 
 import java.lang.reflect.*;
 import java.util.Objects;

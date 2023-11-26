@@ -1,18 +1,14 @@
-package vknue.mahjong.mahjong;
+package vknue.mahjong.utilities;
 
 import javafx.scene.control.Alert;
 
 import java.io.File;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
-public class Utils {
+public class GeneralUtils {
 
-    private Utils() {
+    private GeneralUtils() {
     }
 
     public static void showMessage(String title, String headerText, String contentText){

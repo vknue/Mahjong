@@ -1,10 +1,10 @@
-package vknue.mahjong.Models;
+package vknue.mahjong.models;
 
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import vknue.mahjong.utilities.GeneralUtils;
 import vknue.mahjong.mahjong.Constants;
 import vknue.mahjong.mahjong.HelloApplication;
-import vknue.mahjong.mahjong.Utils;
 
 import java.io.*;
 import java.util.ArrayList;
@@ -60,7 +60,7 @@ public class Game implements Serializable {
     private void initBoard() {
         String directory = HelloApplication.class.getClassLoader().getResource("vknue/mahjong/images/tiles/Chun.png").getPath();
         String directoryPath = directory.substring(0,directory.lastIndexOf('/'));
-        for(String x : Objects.requireNonNull(Utils.getDirectoryFileNames(directoryPath))){
+        for(String x : Objects.requireNonNull(GeneralUtils.getDirectoryFileNames(directoryPath))){
             for(int i=0;i<4;i++){
                 Tile tile = new Tile();
                 tile.setName(x);
