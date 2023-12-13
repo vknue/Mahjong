@@ -93,6 +93,7 @@ public class HelloController implements Initializable {
             LastCheckedMessageIndex++;
         } catch (RemoteException e) {
             e.printStackTrace();
+        }catch (IllegalArgumentException e){
         }
     }
 
@@ -139,7 +140,6 @@ public class HelloController implements Initializable {
     private  HBox pnlOpponent;  //1
     @FXML
     private  VBox pnlInstructions; //3
-
     @FXML
     private TextArea taChatBox;
     @FXML
@@ -299,7 +299,7 @@ public class HelloController implements Initializable {
     private static void postMessage(LogMessage logMessage){
         Label label = new Label(logMessage.getMessage());
         label.setTextFill(Color.valueOf(logMessage.getColor()));
-        label.setPadding(new Insets(5, 10, 5, 10));
+        label.setPadding(new Insets(2, 0, 2, 10));
         ((Pane)components.get(3)).getChildren().add(label);
         game.getLog().add(logMessage);
         ((ScrollPane)(components.get(5))).vvalueProperty().bind(((Pane)(components.get(3))).heightProperty());

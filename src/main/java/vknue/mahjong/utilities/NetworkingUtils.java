@@ -25,6 +25,7 @@ public class NetworkingUtils {
 
     private static void sendSerializableRequest(Socket client, Game gameState) throws ClassNotFoundException, IOException {
         ObjectOutputStream oos = new ObjectOutputStream(client.getOutputStream());
+        ObjectInputStream ois = new ObjectInputStream(client.getInputStream());
         oos.writeObject(gameState);
         System.out.println("Game board sent to the server!");
     }

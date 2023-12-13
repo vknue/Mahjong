@@ -11,6 +11,8 @@ import vknue.mahjong.models.PlayerType;
 import vknue.mahjong.networking.RMI.RemoteChatService;
 import vknue.mahjong.networking.RMI.RemoteChatServiceImpl;
 
+import java.rmi.AccessException;
+import java.rmi.Remote;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
@@ -21,6 +23,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.rmi.server.UnicastRemoteObject;
 
+import static javafx.application.Platform.*;
 
 public class HelloApplication extends Application {
     private static PlayerType playerLoggedIn;
@@ -35,6 +38,7 @@ public class HelloApplication extends Application {
     }
 
     public static void main(String[] args) {
+        String playerName = args.length == 0 ? Constants.MAHJONG : args[0];
 
 
         /*if(PlayerType.SERVER.name().equals(playerName)) {
@@ -49,11 +53,11 @@ public class HelloApplication extends Application {
 
         if(!isPortInUse(Constants.SERVER_PORT)){
             playerLoggedIn = PlayerType.SERVER;
-            new Thread(HelloApplication::startServer).start();
+            new Thread(() -> startServer()).start();
             AppParameters.setPlayerType(PlayerType.SERVER);
         }else{
             playerLoggedIn = PlayerType.CLIENT;
-            new Thread(HelloApplication::startClient).start();
+            new Thread(() -> startClient()).start();
             AppParameters.setPlayerType(PlayerType.CLIENT);
         }
 
@@ -62,9 +66,10 @@ public class HelloApplication extends Application {
 
     private static boolean isPortInUse(int port) {
         try (ServerSocket serverSocket = new ServerSocket(port)) {
-
+            // If the port is available and we're able to create a ServerSocket, it's not in use.
             return false;
         } catch (IOException e) {
+            // If the port is already in use, creating a ServerSocket will throw an IOException.
             return true;
         }
     }
@@ -92,7 +97,7 @@ public class HelloApplication extends Application {
     public static void startRmiServer() {
         try {
             Registry registry = LocateRegistry.createRegistry(Constants.RMI_PORT);
-            remoteChatService = new RemoteChatServiceImpl();
+             remoteChatService = new RemoteChatServiceImpl();
             RemoteChatService skeleton = (RemoteChatService)
                     UnicastRemoteObject.exportObject(remoteChatService,
                             Constants.RANDOM_PORT_HINT);

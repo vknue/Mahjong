@@ -5,9 +5,9 @@ import java.io.Serializable;
 
 public class LogMessage  implements Serializable {
 
-    private static String message;
+    private  String message;
 
-    private static String color;
+    private  String color;
 
     public LogMessage(String message, String color) {
         setMessage(message);
@@ -20,7 +20,7 @@ public class LogMessage  implements Serializable {
     }
 
     public  void setMessage(String message) {
-        LogMessage.message = message;
+        this.message = message;
     }
 
     public  String getColor() {
@@ -28,6 +28,6 @@ public class LogMessage  implements Serializable {
     }
 
     public  void setColor(String color) {
-        LogMessage.color = color;
+        this.color = color;
     }
 }
