@@ -1,83 +1,151 @@
 package vknue.mahjong.mahjong;
 
+import javafx.animation.Animation;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
+import javafx.geometry.Insets;
+import javafx.scene.Node;
 import javafx.scene.control.Label;
+import javafx.scene.control.ScrollPane;
+import javafx.scene.control.TextArea;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.input.KeyCode;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
+import javafx.util.Duration;
 import vknue.mahjong.models.*;
-import vknue.mahjong.utilities.BoardUXUtils;
-import vknue.mahjong.utilities.DocumentationUtils;
-import vknue.mahjong.utilities.GameUtils;
-import vknue.mahjong.utilities.GeneralUtils;
-
+import vknue.mahjong.networking.RMI.RemoteChatService;
+import vknue.mahjong.utilities.*;
 import java.io.BufferedWriter;
-import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.net.URL;
+import java.rmi.NotBoundException;
+import java.rmi.RemoteException;
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
 import java.util.*;
 import java.util.stream.Collectors;
-
 
 public class HelloController implements Initializable {
     private static Game game;
     private static List<Pane> decks;
+    private int LastCheckedMessageIndex;
+    private static List<Node> components;
 
+    private static RemoteChatService chatServiceStub;
     @Override
     public void initialize(URL location, ResourceBundle resources) {
+        try {
+            initVariables();
+            initDecks();
+            initUI();
+            initKeyListeners();
+            Registry registry = LocateRegistry.getRegistry(
+                    Constants.HOST_NAME,
+                    Constants.RMI_PORT);
+            chatServiceStub = (RemoteChatService) registry.lookup(Constants.REMOTE_CHAT_OBJECT_NAME);
+
+        } catch (InterruptedException | RemoteException | NotBoundException e) {
+            e.printStackTrace();
+        }
+
+        Timeline timeline = new Timeline(new KeyFrame(Duration.seconds(1), e -> receiveChatMessages()));
+        timeline.setCycleCount(Animation.INDEFINITE);
+        timeline.playFromStart();
+
+    }
+
+
+    private void initUI() {
+        BoardUXUtils.blurOutPane(AppParameters.getPlayerType() == PlayerType.SERVER ? pnlMyDeck : pnlOpponent);
+    }
+
+    private void initVariables() {
         game = new Game();
         decks = Arrays.asList(pnlMyDeck, pnlOpponent);
+        components = Arrays.asList(pnlMyDeck,pnlOpponent,ivDiscarded,pnlInstructions, btnDraw, spLog);
+        LastCheckedMessageIndex = 0;
+    }
+
+    private void initKeyListeners() {
+        taChatBox.setOnKeyPressed(
+                (e) -> {
+                    if (e.getCode() == KeyCode.ENTER) {
+                        sendChatMessage();
+                    }
+                }
+        );
+    }
+
+    private void sendChatMessage(){
+        String chatMessage = AppParameters.getPlayerType().toString() + " : " + taChatBox.getText();
         try {
-            initDecks();
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
+            chatServiceStub.sendChatMessage(chatMessage);
+            postMessage(new LogMessage(chatMessage, Color.DEEPSKYBLUE.toString()));
+            taChatBox.clear();
+            LastCheckedMessageIndex++;
+        } catch (RemoteException e) {
+            e.printStackTrace();
         }
-        BoardUXUtils.blurOutPane(pnlMyDeck);
+    }
+
+    public void receiveChatMessages() {
+        List<String> receivedChatMessages;
+        try {
+            receivedChatMessages = chatServiceStub.getAllChatMessages();
+            int originalListSize = receivedChatMessages.size();
+            receivedChatMessages = receivedChatMessages.subList(LastCheckedMessageIndex+1, receivedChatMessages.size());
+            LastCheckedMessageIndex = originalListSize-1;
+            receivedChatMessages.forEach(x -> postMessage(new LogMessage(x, Color.DEEPSKYBLUE.toString())));
+        } catch (RemoteException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void spreadTileForPlayer(List<Tile> player,Pane deck, Tile tile){
+        player.add(tile);
+        ImageView finalTile = tile.getImage();
+        tile.getImage().setOnMouseClicked(event -> discard(finalTile));
+        deck.getChildren().add(tile.getImage());
     }
 
     private void initDecks() throws InterruptedException {
-        Tile tile;
         for (int i = 0; i < 13; i++) {
-            //
-            tile = game.getBoardTiles().remove(game.getBoardTiles().size() - 1);
-            game.getPlayer1().add(tile);
-            ImageView finalTile = tile.getImage();
-            tile.getImage().setOnMouseClicked(event -> discard(finalTile));
-            pnlMyDeck.getChildren().add(tile.getImage());
-            //
-            tile = game.getBoardTiles().remove(game.getBoardTiles().size() - 1);
-            game.getPlayer2().add(tile);
-            pnlOpponent.getChildren().add(tile.getImage());
-            ImageView finalTile2 = tile.getImage();
-            tile.getImage().setOnMouseClicked(event -> discard(finalTile2));
+            spreadTileForPlayer(game.getPlayer1(),pnlMyDeck,game.getBoardTiles().remove(game.getBoardTiles().size() - 1));
+            spreadTileForPlayer(game.getPlayer2(),pnlOpponent,game.getBoardTiles().remove(game.getBoardTiles().size() - 1));
         }
-        tile = game.getBoardTiles().remove(game.getBoardTiles().size() - 1);
-        game.getPlayer1().add(tile);
-        ImageView finalTile = tile.getImage();
-        tile.getImage().setOnMouseClicked(event -> discard(finalTile));
-        pnlMyDeck.getChildren().add(tile.getImage());
-        postMessage("Starting decks have been initialized. Good Luck!");
-        postMessage("Player 1's turn. Pick a tile to discard.");
+        spreadTileForPlayer(game.getPlayer1(),pnlMyDeck,game.getBoardTiles().remove(game.getBoardTiles().size() - 1));
+        postMessage(new LogMessage("Starting decks have been initialized. Good Luck!", Color.GREEN.toString()));
+        postMessage(new LogMessage("Player 1's turn. Pick a tile to discard.",Color.GREEN.toString()));
         fixTransparency();
-        Arrays.asList(pnlMyDeck, pnlOpponent).forEach(deck -> BoardUXUtils.sortDeck(deck));
+        Arrays.asList(pnlMyDeck, pnlOpponent).forEach(BoardUXUtils::sortDeck);
     }
+    @FXML
+    private ScrollPane spLog; //5
+    @FXML
+    private  ImageView btnDraw; //4
+    @FXML
+    private  ImageView ivDiscarded; //2
+    @FXML
+    private  HBox pnlMyDeck; //0
+    @FXML
+    private  HBox pnlOpponent;  //1
+    @FXML
+    private  VBox pnlInstructions; //3
 
     @FXML
-    private  ImageView btnDraw;
+    private TextArea taChatBox;
     @FXML
-    private  ImageView ivDiscarded;
-    @FXML
-    private  HBox pnlMyDeck;
-    @FXML
-    private  HBox pnlOpponent;
-    @FXML
-    private  VBox pnlInstructions;
+    private void  onbtnSendChatMessageClicked(){
+        sendChatMessage();
+    }
 
     @FXML
     private void onbtnDrawClicked(MouseEvent event) {
@@ -90,20 +158,20 @@ public class HelloController implements Initializable {
         targetPanel.setMouseTransparent(false);
         playerTiles.add(tile);
         if (GameUtils.checkWinner(playerTiles.stream()
-                .sorted(Comparator.comparing(o -> o.getName()))
+                .sorted(Comparator.comparing(Tile::getName))
                 .collect(Collectors.toList()))) {
             declareWinner();
+            NetworkingUtils.sendGameStateToPort(game, (AppParameters.getPlayerType()==PlayerType.SERVER ? Constants.CLIENT_PORT : Constants.SERVER_PORT));
         }
         BoardUXUtils.sortDeck(targetPanel);
-        postMessage("Tile drawn!");
-        postMessage("Player " + game.getTurn() + " discard a tile");
+        postMessage(new LogMessage("Tile drawn!", Color.GREEN.toString()));
+        postMessage(new LogMessage("Player " + game.getTurn() + " discard a tile", Color.GREEN.toString()));
         fixTransparency();
+        BoardUXUtils.blurOutPane(AppParameters.getPlayerType() == PlayerType.SERVER ? pnlMyDeck : pnlOpponent);
     }
 
-    private void declareWinner() {
+    private static void declareWinner() {
         GeneralUtils.showMessage("Winner", "We have a winner", "Player " + game.getTurn() + " has won!");
-        postMessage("Player " + game.getTurn() + " has collected a winning hand");
-        postMessage("Game over!");
         fixTransparency();
     }
 
@@ -121,27 +189,32 @@ public class HelloController implements Initializable {
         try {
             game = Game.restoreState(Constants.STATE_FILE_NAME);
             properlyRestore(game);
+            GeneralUtils.showMessage("Succesfull", "Game loaded", "You have succesfully loaded your old game!");
         } catch (IOException | ClassNotFoundException e) {
             System.out.println("Error babiehhhhhhh");
         }
     }
 
-    public  void properlyRestore(Game game){
-        decks.forEach(deck -> BoardUXUtils.clearDeck(deck));
-        game.getPlayer1().forEach(x -> x.getImage().setOnMouseClicked(e -> discard(x.getImage())));
-        game.getPlayer2().forEach(x ->  x.getImage().setOnMouseClicked(e -> discard(x.getImage())));
-        decks.forEach(panel -> panel.getChildren().addAll(game.getPlayer2().stream().map(Tile::getImage).collect(Collectors.toList())));
-        decks.forEach(deck -> BoardUXUtils.sortDeck(deck));
-        ivDiscarded.setImage(game.getDiscardedTile().getImage().getImage());
-        ivDiscarded.setUserData(game.getDiscardedTile().getName());
+    public static void properlyRestore(Game gameToRestore){
+        decks.forEach(BoardUXUtils::clearDeck);
+        BoardUXUtils.clearDeck((Pane) components.get(3));
+        GameUtils.setUpImages(gameToRestore);
+        gameToRestore.getPlayer1().forEach(x -> x.getImage().setOnMouseClicked(e -> discard(x.getImage())));
+        gameToRestore.getPlayer2().forEach(x ->  x.getImage().setOnMouseClicked(e -> discard(x.getImage())));
+        decks.get(1).getChildren().addAll(gameToRestore.getPlayer2().stream().map(Tile::getImage).toList());
+        decks.get(0).getChildren().addAll(gameToRestore.getPlayer1().stream().map(Tile::getImage).toList());
+        decks.forEach(BoardUXUtils::sortDeck);
+        ((ImageView)components.get(2)).setImage(gameToRestore.getDiscardedTile().getImage().getImage());
+        components.get(2).setUserData(gameToRestore.getDiscardedTile().getName());
+        BoardUXUtils.blurOutPane(AppParameters.getPlayerType() == PlayerType.SERVER ? (Pane)components.get(0) : (Pane)components.get(1));
+        gameToRestore.getLog().forEach(HelloController::postMessage);
+        game=gameToRestore;
+        if (GameUtils.checkWinner(((game.getTurn() != 1) ? game.getPlayer2() : game.getPlayer1()).stream()
+                .sorted(Comparator.comparing(Tile::getName))
+                .collect(Collectors.toList()))) {
+            declareWinner();
+        }
         fixTransparency();
-        game.getLog().forEach(x -> {
-            Label label = new Label(x);
-            label.setTextFill(Color.GREEN);
-            pnlInstructions.getChildren().add(label);
-        });
-        GeneralUtils.showMessage("Succesfull", "Game loaded", "You have succesfully loaded your old game!");
-
     }
     @FXML
     private void generateDocumentation(){
@@ -157,7 +230,7 @@ public class HelloController implements Initializable {
         sb
                 .append(DocumentationUtils.HEADER_CLOSING)
                 .append(DocumentationUtils.HTML_CLOSING);
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(new File(Constants.DOCUMENTATION_FILE_NAME)))) {
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(Constants.DOCUMENTATION_FILE_NAME))) {
             writer.write(sb.toString());
         } catch (IOException e) {
             e.printStackTrace();
@@ -190,17 +263,19 @@ public class HelloController implements Initializable {
         targetPanel.setMouseTransparent(false);
         playerTiles.add(tile);
         if(GameUtils.checkWinner(playerTiles.stream()
-                .sorted(Comparator.comparing(o -> o.getName()))
+                .sorted(Comparator.comparing(Tile::getName))
                 .collect(Collectors.toList()))){
             declareWinner();
+            NetworkingUtils.sendGameStateToPort(game, (AppParameters.getPlayerType()==PlayerType.SERVER ? Constants.CLIENT_PORT : Constants.SERVER_PORT));
         }
         BoardUXUtils.sortDeck(targetPanel);
-        postMessage("Tile drawn! Pong!");
-        postMessage("Player " + game.getTurn() + " discard a tile");
+        postMessage(new LogMessage("Tile drawn! Pong!", Color.GREEN.toString()));
+        postMessage(new LogMessage("Player " + game.getTurn() + " discard a tile", Color.GREEN.toString()));
         fixTransparency();
         ivDiscarded.setImage(new Image(HelloApplication.class.getClassLoader().getResourceAsStream(Constants.BACK_IMAGE)));
+        BoardUXUtils.blurOutPane(AppParameters.getPlayerType() == PlayerType.SERVER ? pnlMyDeck : pnlOpponent);
     }
-    private  void discard(ImageView imageView) {
+    private static void discard(ImageView imageView) {
         ((Pane) imageView.getParent()).getChildren().remove(imageView);
         List<Tile> currentPlayerList = (game.getTurn() == 1) ? game.getPlayer1() : game.getPlayer2();
         for (Iterator<Tile> iterator = currentPlayerList.iterator(); iterator.hasNext(); ) {
@@ -210,27 +285,30 @@ public class HelloController implements Initializable {
                 break; // Stop after removing the first occurrence
             }
         }
-        ivDiscarded.setImage(imageView.getImage());
-        ivDiscarded.setUserData(imageView.getUserData());
-        postMessage("Tile successfully discarded!");
-        game.setDiscardedTile(new Tile( ivDiscarded.getUserData().toString(),new ImageView(ivDiscarded.getImage())));
-        game.getDiscardedTile().getImage().setUserData(ivDiscarded.getUserData());
+        ((ImageView)components.get(2)).setImage(imageView.getImage());
+        components.get(2).setUserData(imageView.getUserData());
+        postMessage(new LogMessage("Tile succesfully discarded", Color.GREEN.toString()));
+        game.setDiscardedTile(new Tile( components.get(2).getUserData().toString(),new ImageView(((ImageView)components.get(2)).getImage())));
+        game.getDiscardedTile().getImage().setUserData(components.get(2).getUserData());
         game.setTurn(3 - game.getTurn()); // Toggle between 1 and 2
-        postMessage("Player " + game.getTurn() + "'s turn. Draw a card.");
+        postMessage(new LogMessage("Player " + game.getTurn() + "'s turn. Draw a card.", Color.GREEN.toString()));
+        NetworkingUtils.sendGameStateToPort(game, (AppParameters.getPlayerType()==PlayerType.SERVER ? Constants.CLIENT_PORT : Constants.SERVER_PORT));
         fixTransparency();
     }
 
-    private  void postMessage(String message){
-        Label label = new Label(message);
-        label.setTextFill(Color.GREEN);
-        pnlInstructions.getChildren().add(label);
-        game.getLog().add(message);
+    private static void postMessage(LogMessage logMessage){
+        Label label = new Label(logMessage.getMessage());
+        label.setTextFill(Color.valueOf(logMessage.getColor()));
+        label.setPadding(new Insets(5, 10, 5, 10));
+        ((Pane)components.get(3)).getChildren().add(label);
+        game.getLog().add(logMessage);
+        ((ScrollPane)(components.get(5))).vvalueProperty().bind(((Pane)(components.get(3))).heightProperty());
     }
-    private  void fixTransparency(){
-        btnDraw.setMouseTransparent((pnlOpponent.getChildren().size()==14 || pnlMyDeck.getChildren().size()==14));
-        pnlMyDeck.setMouseTransparent((pnlMyDeck.getChildren().size()==13 || game.getTurn()==2));
-        pnlOpponent.setMouseTransparent((pnlOpponent.getChildren().size()==13 || game.getTurn()==1));
-        ivDiscarded.setMouseTransparent((pnlOpponent.getChildren().size()==14 || pnlMyDeck.getChildren().size()==14));
+    private static void fixTransparency(){
+        components.get(4).setMouseTransparent(((((Pane)components.get(1))).getChildren().size()==14 || ((Pane)components.get(0)).getChildren().size()==14 || ((game.getTurn()==2&&AppParameters.getPlayerType()==PlayerType.CLIENT) || (game.getTurn()==1&&AppParameters.getPlayerType()==PlayerType.SERVER))) );
+        components.get(0).setMouseTransparent((((Pane)components.get(0)).getChildren().size()==13 || game.getTurn()==2 || AppParameters.getPlayerType() ==  PlayerType.SERVER) );
+        components.get(1).setMouseTransparent((((Pane)components.get(1)).getChildren().size()==13 || game.getTurn()==1 || AppParameters.getPlayerType() == PlayerType.CLIENT));
+        components.get(2).setMouseTransparent((((Pane)components.get(1)).getChildren().size()==14 || ((Pane)components.get(0)).getChildren().size()==14|| ((game.getTurn()==2&&AppParameters.getPlayerType()==PlayerType.CLIENT) || (game.getTurn()==1&&AppParameters.getPlayerType()==PlayerType.SERVER))) );
     }
 
 }

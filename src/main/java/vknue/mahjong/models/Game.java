@@ -3,10 +3,11 @@ package vknue.mahjong.models;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import vknue.mahjong.utilities.GeneralUtils;
-import vknue.mahjong.mahjong.Constants;
 import vknue.mahjong.mahjong.HelloApplication;
 
 import java.io.*;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -18,7 +19,7 @@ public class Game implements Serializable {
     private List<Tile> boardTiles;
     private List<Tile> player1;
     private List<Tile> player2;
-    private List<String> log;
+    private List<LogMessage> log;
     private Tile discardedTile;
     private int turn;
 
@@ -32,10 +33,9 @@ public class Game implements Serializable {
         initBoard();
     }
 
-    public List<String> getLog() {
+    public List<LogMessage> getLog() {
         return log;
     }
-
 
 
     public int getTurn() {
@@ -59,8 +59,8 @@ public class Game implements Serializable {
 
     private void initBoard() {
         String directory = HelloApplication.class.getClassLoader().getResource("vknue/mahjong/images/tiles/Chun.png").getPath();
-        String directoryPath = directory.substring(0,directory.lastIndexOf('/'));
-        for(String x : Objects.requireNonNull(GeneralUtils.getDirectoryFileNames(directoryPath))){
+        String decodedPath = URLDecoder.decode(directory.substring(0,directory.lastIndexOf('/')), StandardCharsets.UTF_8);
+        for(String x : Objects.requireNonNull(GeneralUtils.getDirectoryFileNames(decodedPath))){
             for(int i=0;i<4;i++){
                 Tile tile = new Tile();
                 tile.setName(x);
@@ -99,36 +99,6 @@ public class Game implements Serializable {
         try (FileInputStream fileIn = new FileInputStream(filename);
              ObjectInputStream in = new ObjectInputStream(fileIn)) {
             Game game = (Game) in.readObject();
-            InputStream inputStream = HelloApplication.class.getClassLoader().getResourceAsStream("vknue/mahjong/images/tiles/"+game.getDiscardedTile().getName()+".png");
-            assert inputStream != null;
-            game.getDiscardedTile().setImage(new ImageView(new Image(inputStream)));
-            game.getDiscardedTile().getImage().setUserData(game.discardedTile.getName());
-            game.getPlayer1().forEach( x -> {
-                x.setImage(new ImageView());
-                x.getImage().setFitWidth(Constants.TILE_IMAGE_WIDTH);
-                x.getImage().setFitHeight(Constants.TILE_IMAGE_HEIGHT);
-                x.getImage().setUserData(x.getName());
-                InputStream is = HelloApplication.class.getClassLoader().getResourceAsStream("vknue/mahjong/images/tiles/"+x.getName()+".png");
-                assert is != null;
-                x.getImage().setImage(new Image(is));
-            });
-            game.getPlayer2().forEach( x -> {
-                x.setImage(new ImageView());
-                x.getImage().setFitWidth(Constants.TILE_IMAGE_WIDTH);
-                x.getImage().setFitHeight(Constants.TILE_IMAGE_HEIGHT);
-                x.getImage().setUserData(x.getName());
-                InputStream is = HelloApplication.class.getClassLoader().getResourceAsStream("vknue/mahjong/images/tiles/"+x.getName()+".png");
-                assert is != null;
-                x.getImage().setImage(new Image(is));
-            });game.getBoardTiles().forEach( x -> {
-                x.setImage(new ImageView());
-                x.getImage().setFitWidth(Constants.TILE_IMAGE_WIDTH);
-                x.getImage().setFitHeight(Constants.TILE_IMAGE_HEIGHT);
-                x.getImage().setUserData(x.getName());
-                InputStream is = HelloApplication.class.getClassLoader().getResourceAsStream("vknue/mahjong/images/tiles/"+x.getName()+".png");
-                assert is != null;
-                x.getImage().setImage(new Image(is));
-            });
             return game;
         }
     }
