@@ -41,16 +41,6 @@ public class HelloApplication extends Application {
         String playerName = args.length == 0 ? Constants.MAHJONG : args[0];
 
 
-        /*if(PlayerType.SERVER.name().equals(playerName)) {
-            playerLoggedIn = PlayerType.SERVER;
-            new Thread(() -> startServer()).start();
-            AppParameters.setPlayerType(PlayerType.SERVER);
-        }else if (PlayerType.CLIENT.name().equals(playerName)) {
-            playerLoggedIn = PlayerType.CLIENT;
-            new Thread(() -> startClient()).start();
-            AppParameters.setPlayerType(PlayerType.CLIENT);
-        }*/
-
         if(!isPortInUse(Constants.SERVER_PORT)){
             playerLoggedIn = PlayerType.SERVER;
             new Thread(() -> startServer()).start();
@@ -60,7 +50,6 @@ public class HelloApplication extends Application {
             new Thread(() -> startClient()).start();
             AppParameters.setPlayerType(PlayerType.CLIENT);
         }
-
         launch();
     }
 

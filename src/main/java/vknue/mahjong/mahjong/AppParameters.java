@@ -7,6 +7,7 @@ public class AppParameters {
 
     private AppParameters(){}
     private static PlayerType playerType;
+    public static boolean fileBeingAccessed = false;
 
 
     public static void setPlayerType(PlayerType type){

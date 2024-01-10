@@ -60,4 +60,10 @@
       </VBox>
     </HBox>
     <HBox fx:id="pnlMyDeck" alignment="CENTER_LEFT" fillHeight="false" minHeight="-Infinity" prefHeight="150.0" prefWidth="200.0" style="-fx-border-color: black; -fx-background-radius: 25px; -fx-background-color: lightblue; -fx-border-radius: 25px;" />
+   <HBox prefHeight="26.0" prefWidth="996.0">
+      <children>
+         <Label text="Latest Move:" />
+         <Label fx:id="lblLatestMove" prefHeight="17.0" prefWidth="901.0" text="No Moves yet!" />
+      </children>
+   </HBox>
 </VBox>

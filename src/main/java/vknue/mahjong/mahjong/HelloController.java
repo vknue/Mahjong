@@ -3,6 +3,7 @@ package vknue.mahjong.mahjong;
 import javafx.animation.Animation;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
+import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.geometry.Insets;
@@ -21,6 +22,8 @@ import javafx.scene.paint.Color;
 import javafx.util.Duration;
 import vknue.mahjong.models.*;
 import vknue.mahjong.networking.RMI.RemoteChatService;
+import vknue.mahjong.services.LoadMoveThread;
+import vknue.mahjong.services.SaveMoveThread;
 import vknue.mahjong.utilities.*;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
@@ -30,7 +33,11 @@ import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
+import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.stream.Collectors;
 
 public class HelloController implements Initializable {
@@ -47,14 +54,20 @@ public class HelloController implements Initializable {
             initDecks();
             initUI();
             initKeyListeners();
+
             Registry registry = LocateRegistry.getRegistry(
                     Constants.HOST_NAME,
                     Constants.RMI_PORT);
             chatServiceStub = (RemoteChatService) registry.lookup(Constants.REMOTE_CHAT_OBJECT_NAME);
-
+            initTimelines();
         } catch (InterruptedException | RemoteException | NotBoundException e) {
             e.printStackTrace();
         }
+        new Thread(new LoadMoveThread(lblLatestMove)).start();
+
+    }
+
+    private void initTimelines() {
 
         Timeline timeline = new Timeline(new KeyFrame(Duration.seconds(1), e -> receiveChatMessages()));
         timeline.setCycleCount(Animation.INDEFINITE);
@@ -93,7 +106,6 @@ public class HelloController implements Initializable {
             LastCheckedMessageIndex++;
         } catch (RemoteException e) {
             e.printStackTrace();
-        }catch (IllegalArgumentException e){
         }
     }
 
@@ -135,6 +147,8 @@ public class HelloController implements Initializable {
     @FXML
     private  ImageView ivDiscarded; //2
     @FXML
+    private Label lblLatestMove;
+    @FXML
     private  HBox pnlMyDeck; //0
     @FXML
     private  HBox pnlOpponent;  //1
@@ -157,6 +171,8 @@ public class HelloController implements Initializable {
         targetPanel.getChildren().add(tile.getImage());
         targetPanel.setMouseTransparent(false);
         playerTiles.add(tile);
+        SaveMoveThread smThread = new SaveMoveThread(new GameMove(AppParameters.getPlayerType(),GameMoveType.DRAW_FROM_TABLE, tile.getName(), LocalDateTime.now()));
+        new Thread(smThread).start();
         if (GameUtils.checkWinner(playerTiles.stream()
                 .sorted(Comparator.comparing(Tile::getName))
                 .collect(Collectors.toList()))) {
@@ -262,6 +278,8 @@ public class HelloController implements Initializable {
         targetPanel.getChildren().add(tile.getImage());
         targetPanel.setMouseTransparent(false);
         playerTiles.add(tile);
+        SaveMoveThread smThread = new SaveMoveThread(new GameMove(AppParameters.getPlayerType(),GameMoveType.PONG, tile.getName(), LocalDateTime.now()));
+        new Thread(smThread).start();
         if(GameUtils.checkWinner(playerTiles.stream()
                 .sorted(Comparator.comparing(Tile::getName))
                 .collect(Collectors.toList()))){
@@ -285,6 +303,8 @@ public class HelloController implements Initializable {
                 break; // Stop after removing the first occurrence
             }
         }
+        SaveMoveThread smThread = new SaveMoveThread(new GameMove(AppParameters.getPlayerType(),GameMoveType.DISCARD, imageView.getUserData().toString(), LocalDateTime.now()));
+        new Thread(smThread).start();
         ((ImageView)components.get(2)).setImage(imageView.getImage());
         components.get(2).setUserData(imageView.getUserData());
         postMessage(new LogMessage("Tile succesfully discarded", Color.GREEN.toString()));

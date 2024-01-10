@@ -17,5 +17,6 @@ public class Constants {
     public static final int RANDOM_PORT_HINT = 1099;
     public static final int RMI_PORT = 1099;
     public static String REMOTE_CHAT_OBJECT_NAME = "vknue.mahjong.chatService";
+    public static String MOVES_FILE = "lastMove.dat";
 
 }
