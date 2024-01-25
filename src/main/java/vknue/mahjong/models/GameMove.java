@@ -1,15 +1,9 @@
 package vknue.mahjong.models;
 
-import vknue.mahjong.mahjong.AppParameters;
-import vknue.mahjong.mahjong.Constants;
 import vknue.mahjong.mahjong.GameMoveType;
 
-import java.io.*;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.io.Serializable;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 
 public class GameMove implements Serializable {
 
@@ -17,13 +11,6 @@ public class GameMove implements Serializable {
     private GameMoveType gameMoveType;
     private String tileName;
     private LocalDateTime time;
-
-
-
-
-
-
-
     @Override
     public String toString() {
         return this.getPlayer().name()

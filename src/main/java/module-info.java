@@ -2,6 +2,7 @@ module vknue.mahjong.mahjong {
     requires javafx.controls;
     requires javafx.fxml;
     requires java.rmi;
+    requires java.xml;
 
 
     opens vknue.mahjong.mahjong to javafx.fxml;

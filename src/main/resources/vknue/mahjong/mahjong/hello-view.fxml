@@ -30,6 +30,11 @@
                 <MenuItem mnemonicParsing="false" onAction="#openDocumentation" text="Open" />
             </items>
         </Menu>
+      <Menu mnemonicParsing="false" text="Replay">
+        <items>
+          <MenuItem mnemonicParsing="false" onAction="#startReplayMode" text="Replay Last Game" />
+        </items>
+      </Menu>
     </MenuBar>
     <HBox fx:id="pnlOpponent" alignment="CENTER_LEFT" minHeight="-Infinity" prefHeight="150.0" prefWidth="200.0" style="-fx-border-color: black; -fx-border-radius: 25px; -fx-background-color: lightblue; -fx-background-radius: 25px;" />
     <HBox alignment="CENTER_LEFT" prefHeight="254.0" prefWidth="690.0">
@@ -55,7 +60,7 @@
                </content>
             </ScrollPane>
             <TextArea fx:id="taChatBox" prefHeight="78.0" prefWidth="371.0" promptText="Type your message here..." />
-            <Button mnemonicParsing="false" onAction="#onbtnSendChatMessageClicked" prefHeight="25.0" prefWidth="390.0" text="Send Chat Message" />
+            <Button fx:id="btnSendMessage" mnemonicParsing="false" onAction="#onbtnSendChatMessageClicked" prefHeight="25.0" prefWidth="390.0" text="Send Chat Message" />
          </children>
       </VBox>
     </HBox>

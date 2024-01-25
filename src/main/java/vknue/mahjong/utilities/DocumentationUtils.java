@@ -1,6 +1,16 @@
 package vknue.mahjong.utilities;
 
+import vknue.mahjong.mahjong.Constants;
+import vknue.mahjong.mahjong.HelloController;
+import vknue.mahjong.models.Game;
+import vknue.mahjong.models.Tile;
+
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.lang.reflect.*;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -8,7 +18,27 @@ import java.util.stream.Stream;
 public class DocumentationUtils {
 
     private DocumentationUtils(){
+    }
 
+    public static void generateDocumentation(){
+        StringBuilder sb = new StringBuilder();
+        List<Class<?>> classes = Arrays.asList(HelloController.class, Game.class, Tile.class, GeneralUtils.class, Constants.class);
+        sb
+                .append(DocumentationUtils.HTML_OPENING)
+                .append(DocumentationUtils.HEADER_OPENING);
+        classes.forEach(x -> {
+            sb.append(DocumentationUtils.getDocumentationForClass(x));
+            sb.append(DocumentationUtils.HORIZONTAL_LINE);
+        });
+        sb
+                .append(DocumentationUtils.HEADER_CLOSING)
+                .append(DocumentationUtils.HTML_CLOSING);
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(Constants.DOCUMENTATION_FILE_NAME))) {
+            writer.write(sb.toString());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        GeneralUtils.showMessage("Done!", "Documentation generated!", "Documentation has been successfully generated");
     }
 
     public static final String HTML_OPENING = """

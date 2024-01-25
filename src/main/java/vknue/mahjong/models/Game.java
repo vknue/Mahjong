@@ -16,18 +16,20 @@ import java.util.Objects;
 
 public class Game implements Serializable {
 
-    private List<Tile> boardTiles;
-    private List<Tile> player1;
-    private List<Tile> player2;
-    private List<LogMessage> log;
+    private final List<Tile> boardTiles;
+    private final List<Tile> player1;
+    private final List<Tile> player2;
+    private final List<LogMessage> log;
     private Tile discardedTile;
     private int turn;
+    private final List<GameMove> gameMoves;
 
     public Game() {
         boardTiles = new ArrayList<>();
         player1 = new ArrayList<>();
         player2 = new ArrayList<>();
         log = new ArrayList<>();
+        gameMoves = new ArrayList<>();
         discardedTile = new Tile();
         turn = 1;
         initBoard();
@@ -84,22 +86,27 @@ public class Game implements Serializable {
         return player2;
     }
 
+    public  List<GameMove> getGameMoves() {
+        return gameMoves;
+    }
 
 
-
-
-    public static void saveState(Game object, String filename) throws IOException {
+    public static void saveState(Game object, String filename)  {
         try (FileOutputStream fileOut = new FileOutputStream(filename);
              ObjectOutputStream out = new ObjectOutputStream(fileOut)) {
             out.writeObject(object);
+        }catch (IOException e){
+            e.printStackTrace();
         }
     }
 
-    public static Game restoreState(String filename) throws IOException, ClassNotFoundException {
+    public static Game restoreState(String filename){
         try (FileInputStream fileIn = new FileInputStream(filename);
              ObjectInputStream in = new ObjectInputStream(fileIn)) {
-            Game game = (Game) in.readObject();
-            return game;
+            return (Game) in.readObject();
+        } catch (IOException | ClassNotFoundException e){
+            e.printStackTrace();
+            return null;
         }
     }
 

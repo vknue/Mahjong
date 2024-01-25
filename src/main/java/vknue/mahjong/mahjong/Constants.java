@@ -18,5 +18,6 @@ public class Constants {
     public static final int RMI_PORT = 1099;
     public static String REMOTE_CHAT_OBJECT_NAME = "vknue.mahjong.chatService";
     public static String MOVES_FILE = "lastMove.dat";
+    public static String REPLAY_FILE_NAME = "replayAdvisor.xml";
 
 }
